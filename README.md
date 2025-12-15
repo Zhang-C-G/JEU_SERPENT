@@ -275,32 +275,6 @@ Le jeu se joue sur un damier N*N.
 7. Pour chaque joueur, le serveur vérifie que la participation du joueur est valide grâce à la fonction ci-dessous. Si le joueur est exclu, la position de tous les joueurs doit être mise à jour en conséquence.
 8. Le serveur communique le résultat final à tout le monde.
 
-
-## Verifier l’eligibilité d’un joueur
-
-```csharp
-bool IsEligible(int pos, string name)
-{
-    Stopwatch sw = new();
-    sw.Start();
-    ECDsa key = ECDsa.Create();
-    key.GenerateKey(ECCurve.NamedCurves.nistP521);
-    int t = 5000 / pos;
-    var k = new byte[t];
-    var d = Encoding.UTF8.GetBytes(name);
-    for (int i = 0; i < t; i++)
-    {
-        var s = key.SignData(d.Concat(BitConverter.GetBytes(pos)).ToArray(), HashAlgorithmName.SHA512);
-        k[i] = s[i % s.Length];
-    }
-    var res = key.SignData(k, HashAlgorithmName.SHA512);
-    sw.Stop();
-    Console.WriteLine($"{pos} {sw.ElapsedMilliseconds} {res}");
-    if (res[(int)Math.Truncate(res.Length / 4.0)] > 0x7F)
-        return true;
-    return false;
-}
-```
 ## Le joueur
 
 - Un joueur doit être authentifié par login / mot de passe auprès du serveur d’identification.
