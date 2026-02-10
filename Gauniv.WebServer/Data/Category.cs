@@ -1,4 +1,4 @@
-﻿#region Header
+#region Header
 // Cyril Tisserand
 // Projet Gauniv - WebServer
 // Gauniv 2025
@@ -26,38 +26,28 @@
 // 
 // Please respect the team's standards for any future contribution
 #endregion
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Gauniv.WebServer.Data
 {
-    public class ApplicationDbContext : IdentityDbContext<User>
+    /// <summary>
+    /// Game category/genre (e.g., Action, Strategy, Puzzle)
+    /// </summary>
+    public class Category
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options)
-        {
-        }
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [Key]
+        public int Id { get; set; }
         
-        public DbSet<Game> Games { get; set; }
+        [Required]
+        [MaxLength(100)]
+        public string Name { get; set; } = string.Empty;
         
-        public DbSet<Category> Categories { get; set; }
+        [MaxLength(500)]
+        public string Description { get; set; } = string.Empty;
         
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-            
-            // Configure Game-Category many-to-many relationship
-            modelBuilder.Entity<Game>()
-                .HasMany(g => g.Categories)
-                .WithMany(c => c.Games)
-                .UsingEntity(j => j.ToTable("GameCategories"));
-            
-            // Configure User-Game many-to-many relationship (owned games)
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.OwnedGames)
-                .WithMany(g => g.Owners)
-                .UsingEntity(j => j.ToTable("UserOwnedGames"));
-        }
+        // Navigation property
+        public ICollection<Game> Games { get; set; } = new List<Game>();
     }
 }

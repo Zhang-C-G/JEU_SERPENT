@@ -1,4 +1,4 @@
-﻿#region Licence
+﻿#region Header
 // Cyril Tisserand
 // Projet Gauniv - WebServer
 // Gauniv 2025
@@ -27,18 +27,9 @@
 // Please respect the team's standards for any future contribution
 #endregion
 using Gauniv.WebServer.Data;
-using Gauniv.WebServer.Dtos;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Net.Http.Headers;
-using System.Text;
-using CommunityToolkit.HighPerformance.Memory;
-using CommunityToolkit.HighPerformance;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using System.ComponentModel.DataAnnotations;
-using MapsterMapper;
 using Mapster;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Gauniv.WebServer.Api

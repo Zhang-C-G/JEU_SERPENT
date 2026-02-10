@@ -38,5 +38,39 @@ namespace Gauniv.WebServer.Data
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Key]
         public int Id { get; set; }
+        
+        [Required]
+        [MaxLength(200)]
+        public string Name { get; set; } = string.Empty;
+        
+        [MaxLength(2000)]
+        public string Description { get; set; } = string.Empty;
+        
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Price { get; set; }
+        
+        /// <summary>
+        /// Path to the game binary/executable file
+        /// </summary>
+        [MaxLength(500)]
+        public string? PayloadPath { get; set; }
+        
+        /// <summary>
+        /// File size in bytes
+        /// </summary>
+        public long FileSize { get; set; }
+        
+        [MaxLength(50)]
+        public string Version { get; set; } = "1.0.0";
+        
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        
+        // Navigation properties
+        public ICollection<Category> Categories { get; set; } = new List<Category>();
+        
+        // Users who own this game (purchased)
+        public ICollection<User> Owners { get; set; } = new List<User>();
     }
 }
