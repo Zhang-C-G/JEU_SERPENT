@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="SnakeGame.Client/SnakeGame.Client.csproj" />
+  <Project Path="SnakeGame.Server/SnakeGame.Server.csproj" />
+  <Project Path="SnakeGame.Shared/SnakeGame.Shared.csproj" />
+</Solution>

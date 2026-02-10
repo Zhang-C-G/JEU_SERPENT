@@ -1,0 +1,39 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "SnakeGame.Server/1.0.0": {
+        "dependencies": {
+          "SnakeGame.Shared": "1.0.0"
+        },
+        "runtime": {
+          "SnakeGame.Server.dll": {}
+        }
+      },
+      "SnakeGame.Shared/1.0.0": {
+        "runtime": {
+          "SnakeGame.Shared.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "SnakeGame.Server/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "SnakeGame.Shared/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
