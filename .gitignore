@@ -1,0 +1,22 @@
+﻿# Fichiers de compilation
+bin/
+obj/
+*.suo
+*.user
+*.cache
+.vs/
+.vscode/
+
+# Fichiers temporaires
+*.tmp
+*.temp
+*.log
+
+# Fichiers de sortie
+*.exe
+*.dll
+*.pdb
+
+# Fichiers de projet spécifiques
+*.csproj.user
+*.csproj.vspscc
