@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "dDpCT6IyAaQ=",
+  "dgSpecHash": "ESiXWtalxas=",
   "success": true,
   "projectFilePath": "C:\\ProjetBinome\\JEU_SERPENT\\SnakeMulti\\SnakeGame.Client\\SnakeGame.Client.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\ahdacharif.elalaoui\\.nuget\\packages\\system.text.json\\10.0.2\\system.text.json.10.0.2.nupkg.sha512"
+    "C:\\Users\\ahdacharif.elalaoui\\.nuget\\packages\\system.text.json\\10.0.3\\system.text.json.10.0.3.nupkg.sha512"
   ],
   "logs": [
     {

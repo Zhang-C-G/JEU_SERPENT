@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Text.Json;
 using SnakeGame.Shared;
 
@@ -8,8 +9,8 @@ namespace SnakeGame.Server
     class Program
     {
         static TcpListener? server;
-        static GameState gameState = new GameState();
         static List<ClientHandler> clients = new List<ClientHandler>();
+        static List<GameRoom> rooms = new List<GameRoom>();
         static Random random = new Random();
         static object gameLock = new object();
         static int gridWidth = 30;
@@ -18,20 +19,42 @@ namespace SnakeGame.Server
         static void Main()
         {
             Console.Title = "Snake Server";
-            Console.WriteLine("=== SERVEUR SNAKE MULTIJOUEUR ===");
-            Console.WriteLine("Initialisation...");
+            Console.WriteLine("=== SERVEUR SNAKE ===");
             
-            InitializeGame();
+            CreateDefaultRoom();
             StartServer();
         }
         
-        static void InitializeGame()
+        static void CreateDefaultRoom()
         {
+            var defaultRoom = new GameRoom
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = "Salon Principal",
+                MaxPlayers = 4
+            };
+            
+            // Initialiser la nourriture
+            defaultRoom.Food = new FoodItem 
+            { 
+                Exists = true,
+                Position = new Position { X = 10, Y = 10 }
+            };
+            
+            // Initialiser le power-up
+            defaultRoom.PowerUp = new PowerUp 
+            { 
+                Exists = false 
+            };
+            
+            defaultRoom.Players = new List<Player>();
+            
             lock (gameLock)
             {
-                gameState.Players.Clear();
-                GenerateFood();
+                rooms.Add(defaultRoom);
             }
+            
+            Console.WriteLine($" Salon créé: {defaultRoom.Name}");
         }
         
         static void StartServer()
@@ -41,20 +64,19 @@ namespace SnakeGame.Server
                 server = new TcpListener(IPAddress.Any, 8888);
                 server.Start();
                 
-                Console.WriteLine($"Serveur démarré sur le port 8888");
-                Console.WriteLine($"Taille de grille: {gridWidth}x{gridHeight}");
-                Console.WriteLine("En attente de joueurs...");
-                Console.WriteLine("Tapez 'exit' pour quitter");
+                Console.WriteLine($" Serveur démarré sur le port 8888");
+                Console.WriteLine($" En attente de joueurs...");
+                Console.WriteLine("");
+                Console.WriteLine("COMMANDES:");
+                Console.WriteLine("  exit - Arrêter le serveur");
+                Console.WriteLine("");
                 
-                // Thread pour accepter les clients
                 Thread acceptThread = new Thread(AcceptClients);
                 acceptThread.Start();
                 
-                // Thread pour la boucle de jeu
                 Thread gameThread = new Thread(GameLoop);
                 gameThread.Start();
                 
-                // Gérer la commande exit
                 while (Console.ReadLine()?.ToLower() != "exit") { }
                 
                 server.Stop();
@@ -62,7 +84,7 @@ namespace SnakeGame.Server
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erreur serveur: {ex.Message}");
+                Console.WriteLine($"Erreur: {ex.Message}");
             }
         }
         
@@ -72,15 +94,18 @@ namespace SnakeGame.Server
             {
                 while (true)
                 {
-                    TcpClient client = server.AcceptTcpClient();
+                    TcpClient client = server!.AcceptTcpClient();
                     ClientHandler handler = new ClientHandler(client);
+                    
                     lock (gameLock)
                     {
                         clients.Add(handler);
                     }
+                    
                     Thread clientThread = new Thread(handler.HandleClient);
                     clientThread.Start();
-                    Console.WriteLine($"Nouveau client connecté ({clients.Count} total)");
+                    
+                    Console.WriteLine($" Nouveau client connecté ({clients.Count} total)");
                 }
             }
             catch { }
@@ -92,50 +117,49 @@ namespace SnakeGame.Server
             {
                 try
                 {
-                    UpdateGame();
-                    BroadcastGameState();
-                    Thread.Sleep(100); // 10 FPS
+                    lock (gameLock)
+                    {
+                        foreach (var room in rooms)
+                        {
+                            UpdateRoom(room);
+                        }
+                    }
+                    
+                    // ENVOYER L'ÉTAT À TOUS LES CLIENTS
+                    foreach (var client in clients)
+                    {
+                        client.SendGameState();
+                    }
+                    
+                    Thread.Sleep(50);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Erreur boucle de jeu: {ex.Message}");
+                    Console.WriteLine($"Erreur boucle: {ex.Message}");
                 }
             }
         }
         
-        static void UpdateGame()
+        static void UpdateRoom(GameRoom room)
         {
-            lock (gameLock)
+            if (room.Players == null) room.Players = new List<Player>();
+            if (room.Players.Count == 0) return;
+            
+            foreach (var player in room.Players)
             {
-                // Mettre à jour chaque joueur
-                foreach (var player in gameState.Players)
-                {
-                    if (player.IsObserver || player.Snake.Count == 0) continue;
-                    
-                    // Vérifier expiration invincibilité
-                    if (player.IsInvincible && DateTime.Now > player.InvincibleUntil)
-                    {
-                        player.IsInvincible = false;
-                    }
-                    
-                    // Déplacer le serpent
-                    MovePlayer(player);
-                    
-                    // Vérifier collisions
-                    CheckCollisions(player);
-                    
-                    // Vérifier nourriture
-                    CheckFood(player);
-                    
-                    // Vérifier power-up
-                    CheckPowerUp(player);
-                }
+                if (player == null || player.IsObserver || player.Snake == null || player.Snake.Count == 0)
+                    continue;
                 
-                // Générer aléatoirement un power-up
-                if (!gameState.PowerUp.Exists && random.Next(0, 100) < 5) // 5% chance
-                {
-                    GeneratePowerUp();
-                }
+                MovePlayer(player);
+                CheckCollisions(player, room);
+                CheckFood(player, room);
+                CheckPowerUp(player, room);
+            }
+            
+            // Générer un power-up aléatoirement
+            if (!room.PowerUp.Exists && random.Next(0, 100) < 3)
+            {
+                GeneratePowerUp(room);
             }
         }
         
@@ -162,7 +186,7 @@ namespace SnakeGame.Server
             player.Snake.RemoveAt(player.Snake.Count - 1);
         }
         
-        static void CheckCollisions(Player player)
+        static void CheckCollisions(Player player, GameRoom room)
         {
             if (player.IsInvincible) return;
             
@@ -178,10 +202,11 @@ namespace SnakeGame.Server
                 }
             }
             
-            // Collision avec d'autres serpents
-            foreach (var otherPlayer in gameState.Players)
+            // Collision avec d'autres joueurs
+            foreach (var otherPlayer in room.Players)
             {
-                if (otherPlayer.Id == player.Id || otherPlayer.IsObserver) continue;
+                if (otherPlayer == null || otherPlayer.Id == player.Id || otherPlayer.IsObserver) 
+                    continue;
                 
                 foreach (var segment in otherPlayer.Snake)
                 {
@@ -194,30 +219,44 @@ namespace SnakeGame.Server
             }
         }
         
-        static void CheckFood(Player player)
+        static void CheckFood(Player player, GameRoom room)
         {
             var head = player.Snake[0];
             
-            if (head.X == gameState.Food.Position.X && head.Y == gameState.Food.Position.Y)
+            if (room.Food != null && room.Food.Exists && 
+                head.X == room.Food.Position.X && head.Y == room.Food.Position.Y)
             {
                 player.Score += 10;
-                player.Snake.Add(new Position { X = -1, Y = -1 }); // Agrandir le serpent
-                GenerateFood();
+                player.Snake.Add(new Position { X = -1, Y = -1 });
+                GenerateFood(room);
+                Console.WriteLine($"  {player.Name} a mangé! Score: {player.Score}");
             }
         }
         
-        static void CheckPowerUp(Player player)
+        static void CheckPowerUp(Player player, GameRoom room)
         {
-            if (gameState.PowerUp.Exists)
+            if (room.PowerUp != null && room.PowerUp.Exists)
             {
                 var head = player.Snake[0];
                 
-                if (head.X == gameState.PowerUp.Position.X && head.Y == gameState.PowerUp.Position.Y)
+                if (head.X == room.PowerUp.Position.X && head.Y == room.PowerUp.Position.Y)
                 {
                     player.Score += 50;
                     player.IsInvincible = true;
-                    player.InvincibleUntil = DateTime.Now.AddSeconds(3);
-                    gameState.PowerUp.Exists = false;
+                    room.PowerUp.Exists = false;
+                    Console.WriteLine($"  {player.Name} a pris le BONUS! +50");
+                    
+                    // Timer pour désactiver l'invincibilité
+                    Thread timerThread = new Thread(() =>
+                    {
+                        Thread.Sleep(3000);
+                        lock (gameLock)
+                        {
+                            player.IsInvincible = false;
+                            Console.WriteLine($"  {player.Name} n'est plus invincible");
+                        }
+                    });
+                    timerThread.Start();
                 }
             }
         }
@@ -229,26 +268,28 @@ namespace SnakeGame.Server
             player.Snake.Add(new Position { X = player.Snake[0].X - 1, Y = player.Snake[0].Y });
             player.Snake.Add(new Position { X = player.Snake[0].X - 2, Y = player.Snake[0].Y });
             player.Direction = "Right";
+            player.Score = 0;
+            Console.WriteLine($"  {player.Name} a perdu! Réinitialisation");
         }
         
-        static void GenerateFood()
+        static void GenerateFood(GameRoom room)
         {
             bool valid;
             do
             {
                 valid = true;
-                gameState.Food.Position = new Position
+                room.Food.Position = new Position
                 {
                     X = random.Next(0, gridWidth),
                     Y = random.Next(0, gridHeight)
                 };
                 
-                // Vérifier que la nourriture n'est pas sur un serpent
-                foreach (var player in gameState.Players)
+                foreach (var player in room.Players)
                 {
+                    if (player == null || player.Snake == null) continue;
                     foreach (var segment in player.Snake)
                     {
-                        if (segment.Equals(gameState.Food.Position))
+                        if (segment.X == room.Food.Position.X && segment.Y == room.Food.Position.Y)
                         {
                             valid = false;
                             break;
@@ -258,34 +299,37 @@ namespace SnakeGame.Server
                 }
             } while (!valid);
             
-            gameState.Food.Exists = true;
+            room.Food.Exists = true;
         }
         
-        static void GeneratePowerUp()
+        static void GeneratePowerUp(GameRoom room)
         {
             bool valid;
             do
             {
                 valid = true;
-                gameState.PowerUp.Position = new Position
+                room.PowerUp.Position = new Position
                 {
                     X = random.Next(0, gridWidth),
                     Y = random.Next(0, gridHeight)
                 };
                 
-                // Ne pas générer sur la nourriture
-                if (gameState.PowerUp.Position.Equals(gameState.Food.Position))
+                // Pas sur la nourriture
+                if (room.Food != null && room.Food.Exists &&
+                    room.PowerUp.Position.X == room.Food.Position.X && 
+                    room.PowerUp.Position.Y == room.Food.Position.Y)
                 {
                     valid = false;
                     continue;
                 }
                 
-                // Ne pas générer sur un serpent
-                foreach (var player in gameState.Players)
+                // Pas sur un serpent
+                foreach (var player in room.Players)
                 {
+                    if (player == null || player.Snake == null) continue;
                     foreach (var segment in player.Snake)
                     {
-                        if (segment.Equals(gameState.PowerUp.Position))
+                        if (segment.X == room.PowerUp.Position.X && segment.Y == room.PowerUp.Position.Y)
                         {
                             valid = false;
                             break;
@@ -295,59 +339,15 @@ namespace SnakeGame.Server
                 }
             } while (!valid);
             
-            gameState.PowerUp.Exists = true;
-            Console.WriteLine($"Power-up généré à ({gameState.PowerUp.Position.X}, {gameState.PowerUp.Position.Y})");
-        }
-        
-        static void BroadcastGameState()
-        {
-            try
-            {
-                byte[] gameData;
-                lock (gameLock)
-                {
-                    var json = JsonSerializer.Serialize(gameState);
-                    gameData = System.Text.Encoding.UTF8.GetBytes(json);
-                }
-                
-                List<ClientHandler> clientsToRemove = new List<ClientHandler>();
-                
-                foreach (var client in clients)
-                {
-                    if (!client.SendGameData(gameData))
-                    {
-                        clientsToRemove.Add(client);
-                    }
-                }
-                
-                // Supprimer les clients déconnectés
-                if (clientsToRemove.Count > 0)
-                {
-                    lock (gameLock)
-                    {
-                        foreach (var client in clientsToRemove)
-                        {
-                            clients.Remove(client);
-                            if (client.Player != null)
-                            {
-                                gameState.Players.Remove(client.Player);
-                                Console.WriteLine($"Joueur déconnecté: {client.Player.Name}");
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Erreur diffusion: {ex.Message}");
-            }
+            room.PowerUp.Exists = true;
+            Console.WriteLine($"  Bonus généré à ({room.PowerUp.Position.X}, {room.PowerUp.Position.Y})");
         }
         
         class ClientHandler
         {
             private TcpClient client;
             private NetworkStream stream;
-            public Player? Player { get; private set; }
+            public Player? Player { get; set; }
             
             public ClientHandler(TcpClient client)
             {
@@ -366,15 +366,19 @@ namespace SnakeGame.Server
                         if (stream.DataAvailable)
                         {
                             int bytesRead = stream.Read(buffer, 0, buffer.Length);
-                            if (bytesRead == 0) break;
-                            
-                            string message = System.Text.Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                            ProcessMessage(message);
+                            if (bytesRead > 0)
+                            {
+                                string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                                ProcessMessage(message);
+                            }
                         }
                         Thread.Sleep(10);
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"  Erreur client: {ex.Message}");
+                }
                 finally
                 {
                     Disconnect();
@@ -392,33 +396,48 @@ namespace SnakeGame.Server
                         string playerName = parts[1];
                         bool isObserver = parts[2] == "OBSERVER";
                         
+                        GameRoom? room = null;
+                        lock (gameLock)
+                        {
+                            room = rooms.FirstOrDefault();
+                        }
+                        
+                        if (room == null) return;
+                        
                         Player = new Player
                         {
+                            Id = Guid.NewGuid().ToString(),
                             Name = playerName,
-                            IsObserver = isObserver
+                            IsObserver = isObserver,
+                            RoomId = room.Id,
+                            Direction = "Right",
+                            Score = 0,
+                            Snake = new List<Position>()
                         };
                         
                         if (!isObserver)
                         {
-                            Player.Snake.Add(new Position { X = random.Next(5, 15), Y = random.Next(5, 15) });
-                            Player.Snake.Add(new Position { X = Player.Snake[0].X - 1, Y = Player.Snake[0].Y });
-                            Player.Snake.Add(new Position { X = Player.Snake[0].X - 2, Y = Player.Snake[0].Y });
+                            Player.Snake.Add(new Position { X = 10, Y = 10 });
+                            Player.Snake.Add(new Position { X = 9, Y = 10 });
+                            Player.Snake.Add(new Position { X = 8, Y = 10 });
                         }
                         
                         lock (gameLock)
                         {
-                            gameState.Players.Add(Player);
+                            if (room.Players == null) room.Players = new List<Player>();
+                            room.Players.Add(Player);
                         }
                         
                         string response = $"ID|{Player.Id}";
-                        Send(System.Text.Encoding.UTF8.GetBytes(response));
+                        byte[] data = Encoding.UTF8.GetBytes(response);
+                        stream.Write(data, 0, data.Length);
                         
-                        Console.WriteLine($"Nouveau {(isObserver ? "observateur" : "joueur")}: {playerName}");
+                        Console.WriteLine($"   {playerName} a rejoint {(isObserver ? "(Obs)" : "")}");
                         
-                        // Si c'est le premier joueur, générer de la nourriture
-                        if (gameState.Players.Count == 1)
+                        // S'assurer qu'il y a de la nourriture
+                        if (room.Food == null || !room.Food.Exists)
                         {
-                            GenerateFood();
+                            GenerateFood(room);
                         }
                     }
                     else if (parts[0] == "MOVE" && Player != null && !Player.IsObserver)
@@ -428,7 +447,6 @@ namespace SnakeGame.Server
                         
                         if (Player.Id == playerId)
                         {
-                            // Empêcher les mouvements opposés immédiats
                             if ((Player.Direction == "Up" && direction != "Down") ||
                                 (Player.Direction == "Down" && direction != "Up") ||
                                 (Player.Direction == "Left" && direction != "Right") ||
@@ -441,28 +459,37 @@ namespace SnakeGame.Server
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Erreur traitement message: {ex.Message}");
+                    Console.WriteLine($"  Erreur message: {ex.Message}");
                 }
             }
             
-            public bool SendGameData(byte[] data)
+            public void SendGameState()
             {
                 try
                 {
-                    stream.Write(data, 0, data.Length);
-                    return true;
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-            
-            void Send(byte[] data)
-            {
-                try
-                {
-                    stream.Write(data, 0, data.Length);
+                    if (Player == null) return;
+                    
+                    GameRoom? room = null;
+                    lock (gameLock)
+                    {
+                        room = rooms.FirstOrDefault(r => r.Id == Player.RoomId);
+                    }
+                    
+                    if (room == null) return;
+                    
+                    var gameState = new GameState
+                    {
+                        Rooms = new List<GameRoom> { room },
+                        CurrentRoomId = Player.RoomId
+                    };
+                    
+                    string json = JsonSerializer.Serialize(gameState);
+                    byte[] data = Encoding.UTF8.GetBytes(json);
+                    
+                    if (client.Connected)
+                    {
+                        stream.Write(data, 0, data.Length);
+                    }
                 }
                 catch { }
             }
@@ -471,6 +498,18 @@ namespace SnakeGame.Server
             {
                 try
                 {
+                    if (Player != null)
+                    {
+                        lock (gameLock)
+                        {
+                            var room = rooms.FirstOrDefault(r => r.Id == Player.RoomId);
+                            if (room != null && room.Players != null)
+                            {
+                                room.Players.Remove(Player);
+                            }
+                        }
+                        Console.WriteLine($"   {Player.Name} a quitté");
+                    }
                     client.Close();
                 }
                 catch { }
@@ -478,4 +517,3 @@ namespace SnakeGame.Server
         }
     }
 }
-

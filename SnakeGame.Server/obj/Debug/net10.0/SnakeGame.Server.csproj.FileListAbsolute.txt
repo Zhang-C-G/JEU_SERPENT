@@ -10,6 +10,7 @@ C:\ProjetBinome\JEU_SERPENT\SnakeMulti\SnakeGame.Server\obj\Debug\net10.0\SnakeG
 C:\ProjetBinome\JEU_SERPENT\SnakeMulti\SnakeGame.Server\obj\Debug\net10.0\SnakeGame.Server.AssemblyInfoInputs.cache
 C:\ProjetBinome\JEU_SERPENT\SnakeMulti\SnakeGame.Server\obj\Debug\net10.0\SnakeGame.Server.AssemblyInfo.cs
 C:\ProjetBinome\JEU_SERPENT\SnakeMulti\SnakeGame.Server\obj\Debug\net10.0\SnakeGame.Server.csproj.CoreCompileInputs.cache
+C:\ProjetBinome\JEU_SERPENT\SnakeMulti\SnakeGame.Server\obj\Debug\net10.0\SnakeGame.Server.sourcelink.json
 C:\ProjetBinome\JEU_SERPENT\SnakeMulti\SnakeGame.Server\obj\Debug\net10.0\SnakeGam.3895B096.Up2Date
 C:\ProjetBinome\JEU_SERPENT\SnakeMulti\SnakeGame.Server\obj\Debug\net10.0\SnakeGame.Server.dll
 C:\ProjetBinome\JEU_SERPENT\SnakeMulti\SnakeGame.Server\obj\Debug\net10.0\refint\SnakeGame.Server.dll

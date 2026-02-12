@@ -2,7 +2,7 @@
   "version": 3,
   "targets": {
     "net10.0-windows7.0": {
-      "System.Text.Json/10.0.2": {
+      "System.Text.Json/10.0.3": {
         "type": "package",
         "compile": {
           "lib/net10.0/_._": {
@@ -31,10 +31,10 @@
     }
   },
   "libraries": {
-    "System.Text.Json/10.0.2": {
-      "sha512": "zy8ey7I16G9neZ6uzxrnYwS7pidElzN8XarsBjGu7lE2m7afTKMEe18KbY3ZSmh/z/bR40oxjd6hlUcmOEaMHw==",
+    "System.Text.Json/10.0.3": {
+      "sha512": "NTUt9DL+maqbgrIYCAmeZUbX0NoXaueySyjW/bdOlFdSUDC1l51XnsbVEuj5tuad12vdq5Sviskp9uMVGgCNLw==",
       "type": "package",
-      "path": "system.text.json/10.0.2",
+      "path": "system.text.json/10.0.3",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -98,7 +98,7 @@
         "lib/net9.0/System.Text.Json.xml",
         "lib/netstandard2.0/System.Text.Json.dll",
         "lib/netstandard2.0/System.Text.Json.xml",
-        "system.text.json.10.0.2.nupkg.sha512",
+        "system.text.json.10.0.3.nupkg.sha512",
         "system.text.json.nuspec",
         "useSharedDesignerContext.txt"
       ]
@@ -112,7 +112,7 @@
   "projectFileDependencyGroups": {
     "net10.0-windows7.0": [
       "SnakeGame.Shared >= 1.0.0",
-      "System.Text.Json >= 10.0.2"
+      "System.Text.Json >= 10.0.3"
     ]
   },
   "packageFolders": {
@@ -170,7 +170,7 @@
         "dependencies": {
           "System.Text.Json": {
             "target": "Package",
-            "version": "[10.0.2, )"
+            "version": "[10.0.3, )"
           }
         },
         "imports": [

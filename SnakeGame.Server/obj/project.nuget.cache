@@ -1,23 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "cRDG/tWqS5c=",
+  "dgSpecHash": "RpKuAVSA0L8=",
   "success": true,
   "projectFilePath": "C:\\ProjetBinome\\JEU_SERPENT\\SnakeMulti\\SnakeGame.Server\\SnakeGame.Server.csproj",
-  "expectedPackageFiles": [
-    "C:\\Users\\ahdacharif.elalaoui\\.nuget\\packages\\system.text.json\\10.0.2\\system.text.json.10.0.2.nupkg.sha512"
-  ],
-  "logs": [
-    {
-      "code": "NU1510",
-      "level": "Warning",
-      "message": "Le PackageReference System.Text.Json ne sera pas supprimé. Envisagez de retirer ce package de vos dépendances, car il est probablement inutile.",
-      "projectPath": "C:\\ProjetBinome\\JEU_SERPENT\\SnakeMulti\\SnakeGame.Server\\SnakeGame.Server.csproj",
-      "warningLevel": 1,
-      "filePath": "C:\\ProjetBinome\\JEU_SERPENT\\SnakeMulti\\SnakeGame.Server\\SnakeGame.Server.csproj",
-      "libraryId": "System.Text.Json",
-      "targetGraphs": [
-        "net10.0"
-      ]
-    }
-  ]
+  "expectedPackageFiles": [],
+  "logs": []
 }
